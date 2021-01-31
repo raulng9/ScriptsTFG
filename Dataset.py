@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import os
 from Patch import Patch
+from Image import Image
 
 class Dataset(torch.utils.data.Dataset):
 
@@ -22,38 +23,39 @@ class Dataset(torch.utils.data.Dataset):
     def len_patches(self):
         return len(self.listOfPatches)
 
-    def getImage(i):
+    def get_image(self,i):
         return self.listOfImages[i]
 
-    def getPatch(i):
+    def get_patch(self,i):
         return self.listOfPatches[i]
 
 
     def get_patches_from_image(self,imageToPatch,lengthOfHalo):
-        print("starting patch")
-        dimensionsOfImage = imageToPatch.shape
+        # print("starting patch")
+        dimensionsOfImage = imageToPatch.imageContent.shape
         height = dimensionsOfImage[0]
         width = dimensionsOfImage[1]
-        print(height)
-        print(width)
+        indexForPatches = imageToPatch.imageIndex
+        actualImage = imageToPatch.imageContent
+        # print(height)
+        # print(width)
         channels = dimensionsOfImage[2]
         if width * height < pow(self.maxDimensionsForGPU, 2):
-            print("decent for CPU")
+            #print("decent for CPU")
             # cv2.namedWindow('ok', cv2.WINDOW_NORMAL)
             # cv2.imshow('ok', imageToPatch)
             # cv2.resizeWindow('ok',self.WINDOW_SIZE, self.WINDOW_SIZE)
             #append to list of patches
-            newPatch = Patch(imageToPatch,1,1,1)
+            newPatch = Patch(imageToPatch.imageContent,1,1,1)
             self.listOfPatches.append(newPatch)
             cv2.imshow('ok', newPatch.patchImage)
             cv2.waitKey(0)
         else:
             print("we have to chop")
-            patchesGeneratedInCall = []
-            firstPatch = imageToPatch[0:int(0+height/2+lengthOfHalo), 0:int(0+width/2+lengthOfHalo)]
-            secondPatch = imageToPatch[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
-            thirdPatch = imageToPatch[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
-            fourthPatch = imageToPatch[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
+            firstPatch = actualImage[0:int(0+height/2+lengthOfHalo), 0:int(0+width/2+lengthOfHalo)]
+            secondPatch = actualImage[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
+            thirdPatch = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
+            fourthPatch = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
             # cv2.namedWindow('primera',cv2.WINDOW_NORMAL)
             # cv2.namedWindow('segunda',cv2.WINDOW_NORMAL)
             # cv2.namedWindow('tercera', cv2.WINDOW_NORMAL)
@@ -66,22 +68,24 @@ class Dataset(torch.utils.data.Dataset):
             # cv2.resizeWindow('segunda', self.WINDOW_SIZE,self.WINDOW_SIZE)
             # cv2.resizeWindow('tercera', self.WINDOW_SIZE,self.WINDOW_SIZE)
             # cv2.resizeWindow('cuarta', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            self.get_patches_from_image(firstPatch,self.HALO_SIZE)
-            self.get_patches_from_image(secondPatch,self.HALO_SIZE)
-            self.get_patches_from_image(thirdPatch,self.HALO_SIZE)
-            self.get_patches_from_image(fourthPatch,self.HALO_SIZE)
+            self.get_patches_from_image(Image(indexForPatches,firstPatch),self.HALO_SIZE)
+            self.get_patches_from_image(Image(indexForPatches,secondPatch),self.HALO_SIZE)
+            self.get_patches_from_image(Image(indexForPatches,thirdPatch),self.HALO_SIZE)
+            self.get_patches_from_image(Image(indexForPatches,fourthPatch),self.HALO_SIZE)
             #dcv2.waitKey(0)
 
 
     def add_image_to_dataset(self):
-        imageToAdd = cv2.imread(self.imagePathToTest)
-        print(imageToAdd.shape)
+        imageToAdd = Image(7,cv2.imread(self.imagePathToTest))
+        #print(imageToAdd.shape)
         cv2.namedWindow('original',cv2.WINDOW_NORMAL)
-        cv2.imshow('original', imageToAdd)
+        cv2.imshow('original', imageToAdd.imageContent)
         cv2.resizeWindow('original', self.WINDOW_SIZE*2,self.WINDOW_SIZE*2)
         patches = self.get_patches_from_image(imageToAdd,self.HALO_SIZE)
         self.listOfPatches.append(patches)
         print(self.len_patches())
+        print(self.get_patch(0).indexOfImage)
+        cv2.imshow('otra',self.get_patch(0).patchImage)
 
 
 

@@ -16,4 +16,3 @@ class Patch():
         self.indexOfImage = index
         self.coordinatesInOriginalImage = coordinatesOriginal
         self.coordinatesWithoutHalo = coordinatesWithoutHalo
-        print("just initialized a patch")
