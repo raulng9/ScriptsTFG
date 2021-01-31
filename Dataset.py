@@ -31,31 +31,44 @@ class Dataset(torch.utils.data.Dataset):
 
 
     def get_patches_from_image(self,imageToPatch,lengthOfHalo):
-        # print("starting patch")
         dimensionsOfImage = imageToPatch.imageContent.shape
         height = dimensionsOfImage[0]
         width = dimensionsOfImage[1]
         indexForPatches = imageToPatch.imageIndex
         actualImage = imageToPatch.imageContent
-        # print(height)
-        # print(width)
         channels = dimensionsOfImage[2]
         if width * height < pow(self.maxDimensionsForGPU, 2):
+            newPatch = Patch(imageToPatch.imageContent,imageToPatch.imageIndex,imageToPatch.coordinatesList,1)
+            #append to list of patches
+            self.listOfPatches.append(newPatch)
+            cv2.imshow('ok', newPatch.patchImage)
+            print(newPatch.coordinatesInOriginalImage)
+            print(sum(newPatch.coordinatesInOriginalImage))
+            cv2.waitKey(0)
             #print("decent for CPU")
             # cv2.namedWindow('ok', cv2.WINDOW_NORMAL)
             # cv2.imshow('ok', imageToPatch)
             # cv2.resizeWindow('ok',self.WINDOW_SIZE, self.WINDOW_SIZE)
-            #append to list of patches
-            newPatch = Patch(imageToPatch.imageContent,1,1,1)
-            self.listOfPatches.append(newPatch)
-            cv2.imshow('ok', newPatch.patchImage)
-            cv2.waitKey(0)
         else:
-            print("we have to chop")
-            firstPatch = actualImage[0:int(0+height/2+lengthOfHalo), 0:int(0+width/2+lengthOfHalo)]
-            secondPatch = actualImage[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
-            thirdPatch = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
-            fourthPatch = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
+            #print("we have to chop")
+            firstPatchArea = actualImage[0:int(0+height/2+lengthOfHalo), 0:int(0+width/2+lengthOfHalo)]
+            secondPatchArea = actualImage[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
+            thirdPatchArea = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
+            fourthPatchArea = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
+            firstImage = Image(indexForPatches,firstPatchArea)
+            firstImage.add_coordinate(0)
+            secondImage = Image(indexForPatches,secondPatchArea)
+            secondImage.add_coordinate(1)
+            thirdImage = Image(indexForPatches,thirdPatchArea)
+            thirdImage.add_coordinate(2)
+            fourthImage = Image(indexForPatches,fourthPatchArea)
+            fourthImage.add_coordinate(3)
+
+            self.get_patches_from_image(firstImage,self.HALO_SIZE)
+            self.get_patches_from_image(secondImage,self.HALO_SIZE)
+            self.get_patches_from_image(thirdImage,self.HALO_SIZE)
+            self.get_patches_from_image(fourthImage,self.HALO_SIZE)
+
             # cv2.namedWindow('primera',cv2.WINDOW_NORMAL)
             # cv2.namedWindow('segunda',cv2.WINDOW_NORMAL)
             # cv2.namedWindow('tercera', cv2.WINDOW_NORMAL)
@@ -68,10 +81,6 @@ class Dataset(torch.utils.data.Dataset):
             # cv2.resizeWindow('segunda', self.WINDOW_SIZE,self.WINDOW_SIZE)
             # cv2.resizeWindow('tercera', self.WINDOW_SIZE,self.WINDOW_SIZE)
             # cv2.resizeWindow('cuarta', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            self.get_patches_from_image(Image(indexForPatches,firstPatch),self.HALO_SIZE)
-            self.get_patches_from_image(Image(indexForPatches,secondPatch),self.HALO_SIZE)
-            self.get_patches_from_image(Image(indexForPatches,thirdPatch),self.HALO_SIZE)
-            self.get_patches_from_image(Image(indexForPatches,fourthPatch),self.HALO_SIZE)
             #dcv2.waitKey(0)
 
 
