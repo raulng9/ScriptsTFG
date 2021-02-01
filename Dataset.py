@@ -11,7 +11,7 @@ class Dataset(torch.utils.data.Dataset):
     listOfImages = []
     listOfPatches = []
 
-    maxDimensionsForGPU = 512
+    maxDimensionsForGPU = 1024
     HALO_SIZE = 20
 
     #settings for the testing windows
@@ -43,8 +43,10 @@ class Dataset(torch.utils.data.Dataset):
             self.listOfPatches.append(newPatch)
             cv2.imshow('ok', newPatch.patchImage)
             print(newPatch.coordinatesInOriginalImage)
-            print(sum(newPatch.coordinatesInOriginalImage))
-            cv2.waitKey(0)
+            print("------------------------")
+            #print(sum(newPatch.coordinatesInOriginalImage))
+            #print(newPatch.coordinatesInOriginalImage)
+            #cv2.waitKey(0)
             #print("decent for CPU")
             # cv2.namedWindow('ok', cv2.WINDOW_NORMAL)
             # cv2.imshow('ok', imageToPatch)
@@ -55,15 +57,26 @@ class Dataset(torch.utils.data.Dataset):
             secondPatchArea = actualImage[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
             thirdPatchArea = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
             fourthPatchArea = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
-            firstImage = Image(indexForPatches,firstPatchArea)
+            listOfCoordinatesForCopying = imageToPatch.coordinatesList[:]
+            firstImage = Image(indexForPatches,firstPatchArea,listOfCoordinatesForCopying[:])
+            #print(firstImage.coordinatesList)
             firstImage.add_coordinate(0)
-            secondImage = Image(indexForPatches,secondPatchArea)
+            secondImage = Image(indexForPatches,secondPatchArea,listOfCoordinatesForCopying[:])
             secondImage.add_coordinate(1)
-            thirdImage = Image(indexForPatches,thirdPatchArea)
+            thirdImage = Image(indexForPatches,thirdPatchArea,listOfCoordinatesForCopying[:])
             thirdImage.add_coordinate(2)
-            fourthImage = Image(indexForPatches,fourthPatchArea)
+            fourthImage = Image(indexForPatches,fourthPatchArea,listOfCoordinatesForCopying[:])
             fourthImage.add_coordinate(3)
 
+
+            #firstImage.print_image_data()
+            #secondImage.print_image_data()
+            #thirdImage.print_image_data()
+            #fsdfsfourthImage.print_image_data()
+
+            #print("------------------------")
+
+            #Recursive call
             self.get_patches_from_image(firstImage,self.HALO_SIZE)
             self.get_patches_from_image(secondImage,self.HALO_SIZE)
             self.get_patches_from_image(thirdImage,self.HALO_SIZE)
@@ -85,16 +98,31 @@ class Dataset(torch.utils.data.Dataset):
 
 
     def add_image_to_dataset(self):
-        imageToAdd = Image(7,cv2.imread(self.imagePathToTest))
+        imageToAdd = Image(7,cv2.imread(self.imagePathToTest),[])
         #print(imageToAdd.shape)
         cv2.namedWindow('original',cv2.WINDOW_NORMAL)
         cv2.imshow('original', imageToAdd.imageContent)
         cv2.resizeWindow('original', self.WINDOW_SIZE*2,self.WINDOW_SIZE*2)
-        patches = self.get_patches_from_image(imageToAdd,self.HALO_SIZE)
-        self.listOfPatches.append(patches)
-        print(self.len_patches())
+        print("Generating patches from image...")
+        self.get_patches_from_image(imageToAdd,self.HALO_SIZE)
+        #self.listOfPatches.append(patches)
+        print("Image selected: ")
         print(self.get_patch(0).indexOfImage)
-        cv2.imshow('otra',self.get_patch(0).patchImage)
+        print("Number of patches generated: ")
+        print(self.len_patches())
+        print("Recursion level: ")
+        recursionLevel = len(self.get_patch(0).coordinatesInOriginalImage)
+        print(recursionLevel)
+        #vis = np.concatenate((self.get_patch(0).patchImage, self.get_patch(1).patchImage), axis=1)
+        #cv2.imshow('out.png', vis)
+        #cv2.waitKey(0)
+        #cv2.imshow('otra',self.get_patch(0).patchImage)
+
+
+
+    def reconstruct_image_from_patches(self):
+        return
+
 
 
 
