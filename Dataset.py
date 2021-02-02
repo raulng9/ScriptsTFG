@@ -38,35 +38,33 @@ class Dataset(torch.utils.data.Dataset):
         actualImage = imageToPatch.imageContent
         channels = dimensionsOfImage[2]
         if width * height < pow(self.maxDimensionsForGPU, 2):
-            newPatch = Patch(imageToPatch.imageContent,imageToPatch.imageIndex,imageToPatch.coordinatesList,1)
+            newPatch = Patch(imageToPatch.imageContent,imageToPatch.imageIndex,[imageToPatch.topLeftCoordinates,imageToPatch.bottomRightCoordinates],1)
             #append to list of patches
             self.listOfPatches.append(newPatch)
             cv2.imshow('ok', newPatch.patchImage)
             print(newPatch.coordinatesInOriginalImage)
             print("------------------------")
-            #print(sum(newPatch.coordinatesInOriginalImage))
-            #print(newPatch.coordinatesInOriginalImage)
-            #cv2.waitKey(0)
-            #print("decent for CPU")
-            # cv2.namedWindow('ok', cv2.WINDOW_NORMAL)
-            # cv2.imshow('ok', imageToPatch)
-            # cv2.resizeWindow('ok',self.WINDOW_SIZE, self.WINDOW_SIZE)
+
         else:
-            #print("we have to chop")
+            #   Computation of the coordinates of the patches with respect to the image
             firstPatchArea = actualImage[0:int(0+height/2+lengthOfHalo), 0:int(0+width/2+lengthOfHalo)]
+            coordinatesFirstPatch = [[imageToPatch.topLeftCoordinates[0],imageToPatch.topLeftCoordinates[1]], [imageToPatch.topLeftCoordinates[0] + width/2 +lengthOfHalo,imageToPatch.topLeftCoordinates[1] + height/2 + lengthOfHalo]]
+
             secondPatchArea = actualImage[0:int(0+height/2+lengthOfHalo), int(0+width/2-lengthOfHalo):width]
+            coordinatesSecondPatch = [[imageToPatch.topLeftCoordinates[0]+width/2-lengthOfHalo,imageToPatch.topLeftCoordinates[1]], [imageToPatch.bottomRightCoordinates[0],imageToPatch.topLeftCoordinates[1] + height/2 + lengthOfHalo]]
+
             thirdPatchArea = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
+            coordinatesThirdPatch = [[imageToPatch.topLeftCoordinates[0],imageToPatch.topLeftCoordinates[1] + height/2], [imageToPatch.topLeftCoordinates[0]+width/2+lengthOfHalo,imageToPatch.bottomRightCoordinates[1]]]
+
             fourthPatchArea = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
-            listOfCoordinatesForCopying = imageToPatch.coordinatesList[:]
-            firstImage = Image(indexForPatches,firstPatchArea,listOfCoordinatesForCopying[:])
-            #print(firstImage.coordinatesList)
-            firstImage.add_coordinate(0)
-            secondImage = Image(indexForPatches,secondPatchArea,listOfCoordinatesForCopying[:])
-            secondImage.add_coordinate(1)
-            thirdImage = Image(indexForPatches,thirdPatchArea,listOfCoordinatesForCopying[:])
-            thirdImage.add_coordinate(2)
-            fourthImage = Image(indexForPatches,fourthPatchArea,listOfCoordinatesForCopying[:])
-            fourthImage.add_coordinate(3)
+            coordinatesFourthPatch = [[imageToPatch.topLeftCoordinates[0]+width/2-lengthOfHalo,imageToPatch.topLeftCoordinates[1] + height/2], [imageToPatch.bottomRightCoordinates[0],imageToPatch.bottomRightCoordinates[1]]]
+
+
+            #   Creation of images for possible further cropping
+            firstImage = Image(indexForPatches,firstPatchArea,coordinatesFirstPatch[0],coordinatesFirstPatch[1])
+            secondImage = Image(indexForPatches,secondPatchArea,coordinatesSecondPatch[0],coordinatesSecondPatch[1])
+            thirdImage = Image(indexForPatches,thirdPatchArea,coordinatesThirdPatch[0],coordinatesThirdPatch[1])
+            fourthImage = Image(indexForPatches,fourthPatchArea,coordinatesFourthPatch[0],coordinatesFourthPatch[1])
 
 
             #firstImage.print_image_data()
@@ -76,7 +74,7 @@ class Dataset(torch.utils.data.Dataset):
 
             #print("------------------------")
 
-            #Recursive call
+            #   Recursive call for further chopping if necessary
             self.get_patches_from_image(firstImage,self.HALO_SIZE)
             self.get_patches_from_image(secondImage,self.HALO_SIZE)
             self.get_patches_from_image(thirdImage,self.HALO_SIZE)
@@ -98,7 +96,14 @@ class Dataset(torch.utils.data.Dataset):
 
 
     def add_image_to_dataset(self):
-        imageToAdd = Image(7,cv2.imread(self.imagePathToTest),[])
+        imageForPatching = cv2.imread(self.imagePathToTest)
+        originCoordinates = [0,0]
+        destinationCoordinates = [imageForPatching.shape[1],imageForPatching.shape[0]]
+        print("Coordinates of initial image:")
+        print(originCoordinates)
+        print(destinationCoordinates)
+        imageToAdd = Image(7,imageForPatching,originCoordinates,destinationCoordinates)
+
         #print(imageToAdd.shape)
         cv2.namedWindow('original',cv2.WINDOW_NORMAL)
         cv2.imshow('original', imageToAdd.imageContent)
@@ -114,9 +119,7 @@ class Dataset(torch.utils.data.Dataset):
         recursionLevel = len(self.get_patch(0).coordinatesInOriginalImage)
         print(recursionLevel)
         #vis = np.concatenate((self.get_patch(0).patchImage, self.get_patch(1).patchImage), axis=1)
-        #cv2.imshow('out.png', vis)
-        #cv2.waitKey(0)
-        #cv2.imshow('otra',self.get_patch(0).patchImage)
+
 
 
 

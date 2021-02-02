@@ -7,16 +7,18 @@ class Image():
 
     imageIndex = None
     imageContent = None
-    coordinatesList = []
+    topLeftCoordinates = None
+    bottomRightCoordinates = None
 
-    def __init__(self, index, content, listOfCoords):
+    def __init__(self, index, content, topLeftCoordinates, bottomRightCoordinates):
         self.imageIndex = index
         self.imageContent = content
-        self.coordinatesList = listOfCoords
+        self.topLeftCoordinates = topLeftCoordinates
+        self.bottomRightCoordinates = bottomRightCoordinates
 
-    def add_coordinate(self,coordinateToAdd):
-        self.coordinatesList.append(coordinateToAdd)
 
     def print_image_data(self):
         print("Index: " + str(self.imageIndex))
-        print(self.coordinatesList)
+        print(topLeftCoordinates)
+        print(bottomRightCoordinates)
+        print("---------------------")
