@@ -11,7 +11,25 @@ class Dataset(torch.utils.data.Dataset):
     listOfImages = []
     listOfPatches = []
 
-    maxDimensionsForGPU = 1024
+
+
+    imageForBlack = cv2.imread(imagePathToTest)
+
+    imageCopyForRects = cv2.imread(imagePathToTest).copy()
+
+
+    dimensionsOfImage = imageForBlack.shape
+    height = dimensionsOfImage[0]
+    width = dimensionsOfImage[1]
+    blackImageForPoints = np.zeros((height,width), np.uint8)
+
+    blackImageForPoints = cv2.cvtColor(blackImageForPoints,cv2.COLOR_GRAY2RGB)
+
+
+    print(blackImageForPoints.shape[0])
+    print(blackImageForPoints.shape[1])
+
+    maxDimensionsForGPU = 512
     HALO_SIZE = 20
 
     #settings for the testing windows
@@ -41,7 +59,7 @@ class Dataset(torch.utils.data.Dataset):
             newPatch = Patch(imageToPatch.imageContent,imageToPatch.imageIndex,[imageToPatch.topLeftCoordinates,imageToPatch.bottomRightCoordinates],1)
             #append to list of patches
             self.listOfPatches.append(newPatch)
-            cv2.imshow('ok', newPatch.patchImage)
+            cv2.rectangle(self.imageCopyForRects, (int(imageToPatch.topLeftCoordinates[0]),int(imageToPatch.topLeftCoordinates[1])), (int(imageToPatch.bottomRightCoordinates[0]),int(imageToPatch.bottomRightCoordinates[1])), (255,0,0), 10)
             print(newPatch.coordinatesInOriginalImage)
             print("------------------------")
 
@@ -54,10 +72,10 @@ class Dataset(torch.utils.data.Dataset):
             coordinatesSecondPatch = [[imageToPatch.topLeftCoordinates[0]+width/2-lengthOfHalo,imageToPatch.topLeftCoordinates[1]], [imageToPatch.bottomRightCoordinates[0],imageToPatch.topLeftCoordinates[1] + height/2 + lengthOfHalo]]
 
             thirdPatchArea = actualImage[int(height/2-lengthOfHalo):height, 0:int(width/2+lengthOfHalo)]
-            coordinatesThirdPatch = [[imageToPatch.topLeftCoordinates[0],imageToPatch.topLeftCoordinates[1] + height/2], [imageToPatch.topLeftCoordinates[0]+width/2+lengthOfHalo,imageToPatch.bottomRightCoordinates[1]]]
+            coordinatesThirdPatch = [[imageToPatch.topLeftCoordinates[0],imageToPatch.topLeftCoordinates[1] + height/2 -lengthOfHalo], [imageToPatch.topLeftCoordinates[0]+width/2+lengthOfHalo,imageToPatch.bottomRightCoordinates[1]]]
 
             fourthPatchArea = actualImage[int(height/2-lengthOfHalo):height, int(width/2-lengthOfHalo):width]
-            coordinatesFourthPatch = [[imageToPatch.topLeftCoordinates[0]+width/2-lengthOfHalo,imageToPatch.topLeftCoordinates[1] + height/2], [imageToPatch.bottomRightCoordinates[0],imageToPatch.bottomRightCoordinates[1]]]
+            coordinatesFourthPatch = [[imageToPatch.topLeftCoordinates[0]+width/2-lengthOfHalo,imageToPatch.topLeftCoordinates[1] + height/2 -lengthOfHalo], [imageToPatch.bottomRightCoordinates[0],imageToPatch.bottomRightCoordinates[1]]]
 
 
             #   Creation of images for possible further cropping
@@ -110,7 +128,14 @@ class Dataset(torch.utils.data.Dataset):
         cv2.resizeWindow('original', self.WINDOW_SIZE*2,self.WINDOW_SIZE*2)
         print("Generating patches from image...")
         self.get_patches_from_image(imageToAdd,self.HALO_SIZE)
-        #self.listOfPatches.append(patches)
+
+        cv2.namedWindow('black',cv2.WINDOW_NORMAL)
+        cv2.imshow("black", self.imageCopyForRects)
+        cv2.resizeWindow('black', self.WINDOW_SIZE*3,self.WINDOW_SIZE*3)
+        cv2.waitKey(0)
+
+        cv2.imwrite('chopping_Result.png', self.imageCopyForRects)
+
         print("Image selected: ")
         print(self.get_patch(0).indexOfImage)
         print("Number of patches generated: ")
