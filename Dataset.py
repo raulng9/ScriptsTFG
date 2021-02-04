@@ -4,33 +4,20 @@ import torch
 import os
 from Patch import Patch
 from Image import Image
+import glob
+
 
 class Dataset(torch.utils.data.Dataset):
 
-    imagePathToTest = "Image_1.png"
+    #   Constant declaration
+    maxDimensionsForGPU = 512
+    HALO_SIZE = 20
+
+    imagePathToTest = None
     listOfImages = []
     listOfPatches = []
 
-
-
-    imageForBlack = cv2.imread(imagePathToTest)
-
-    imageCopyForRects = cv2.imread(imagePathToTest).copy()
-
-
-    dimensionsOfImage = imageForBlack.shape
-    height = dimensionsOfImage[0]
-    width = dimensionsOfImage[1]
-    blackImageForPoints = np.zeros((height,width), np.uint8)
-
-    blackImageForPoints = cv2.cvtColor(blackImageForPoints,cv2.COLOR_GRAY2RGB)
-
-
-    print(blackImageForPoints.shape[0])
-    print(blackImageForPoints.shape[1])
-
-    maxDimensionsForGPU = 512
-    HALO_SIZE = 20
+    imageCopyForRects = None
 
     #settings for the testing windows
     WINDOW_SIZE = 300
@@ -57,7 +44,7 @@ class Dataset(torch.utils.data.Dataset):
         channels = dimensionsOfImage[2]
         if width * height < pow(self.maxDimensionsForGPU, 2):
             newPatch = Patch(imageToPatch.imageContent,imageToPatch.imageIndex,[imageToPatch.topLeftCoordinates,imageToPatch.bottomRightCoordinates],1)
-            #append to list of patches
+            #   Append to list of patches
             self.listOfPatches.append(newPatch)
             cv2.rectangle(self.imageCopyForRects, (int(imageToPatch.topLeftCoordinates[0]),int(imageToPatch.topLeftCoordinates[1])), (int(imageToPatch.bottomRightCoordinates[0]),int(imageToPatch.bottomRightCoordinates[1])), (255,0,0), 10)
             print(newPatch.coordinatesInOriginalImage)
@@ -85,44 +72,25 @@ class Dataset(torch.utils.data.Dataset):
             fourthImage = Image(indexForPatches,fourthPatchArea,coordinatesFourthPatch[0],coordinatesFourthPatch[1])
 
 
-            #firstImage.print_image_data()
-            #secondImage.print_image_data()
-            #thirdImage.print_image_data()
-            #fsdfsfourthImage.print_image_data()
-
-            #print("------------------------")
-
             #   Recursive call for further chopping if necessary
             self.get_patches_from_image(firstImage,self.HALO_SIZE)
             self.get_patches_from_image(secondImage,self.HALO_SIZE)
             self.get_patches_from_image(thirdImage,self.HALO_SIZE)
             self.get_patches_from_image(fourthImage,self.HALO_SIZE)
 
-            # cv2.namedWindow('primera',cv2.WINDOW_NORMAL)
-            # cv2.namedWindow('segunda',cv2.WINDOW_NORMAL)
-            # cv2.namedWindow('tercera', cv2.WINDOW_NORMAL)
-            # cv2.namedWindow('cuarta',cv2.WINDOW_NORMAL)
-            # cv2.imshow('primera', firstPatch)
-            # cv2.imshow('segunda', secondPatch)
-            # cv2.imshow('tercera', thirdPatch)
-            # cv2.imshow('cuarta', fourthPatch)
-            # cv2.resizeWindow('primera', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            # cv2.resizeWindow('segunda', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            # cv2.resizeWindow('tercera', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            # cv2.resizeWindow('cuarta', self.WINDOW_SIZE,self.WINDOW_SIZE)
-            #dcv2.waitKey(0)
 
 
     def add_image_to_dataset(self):
+
         imageForPatching = cv2.imread(self.imagePathToTest)
+        self.listOfImages.append(imageForPatching)
+        self.imageCopyForRects = imageForPatching.copy()
         originCoordinates = [0,0]
         destinationCoordinates = [imageForPatching.shape[1],imageForPatching.shape[0]]
-        print("Coordinates of initial image:")
-        print(originCoordinates)
-        print(destinationCoordinates)
-        imageToAdd = Image(7,imageForPatching,originCoordinates,destinationCoordinates)
 
-        #print(imageToAdd.shape)
+        currentIndex = self.len_images() + 1
+        imageToAdd = Image(currentIndex,imageForPatching,originCoordinates,destinationCoordinates)
+
         cv2.namedWindow('original',cv2.WINDOW_NORMAL)
         cv2.imshow('original', imageToAdd.imageContent)
         cv2.resizeWindow('original', self.WINDOW_SIZE*2,self.WINDOW_SIZE*2)
@@ -134,7 +102,8 @@ class Dataset(torch.utils.data.Dataset):
         cv2.resizeWindow('black', self.WINDOW_SIZE*3,self.WINDOW_SIZE*3)
         cv2.waitKey(0)
 
-        cv2.imwrite('chopping_Result.png', self.imageCopyForRects)
+        saveName = "chopping_Result_" + str(currentIndex) + ".png"
+        cv2.imwrite(saveName, self.imageCopyForRects)
 
         print("Image selected: ")
         print(self.get_patch(0).indexOfImage)
@@ -143,36 +112,39 @@ class Dataset(torch.utils.data.Dataset):
         print("Recursion level: ")
         recursionLevel = len(self.get_patch(0).coordinatesInOriginalImage)
         print(recursionLevel)
-        #vis = np.concatenate((self.get_patch(0).patchImage, self.get_patch(1).patchImage), axis=1)
 
 
-
-
-    def reconstruct_image_from_patches(self):
-        return
-
-
-
-
-    # def __init__(self, input_path, groundtruth_path=None):
-    #     self.input_path = input_path
-    #     self.groundtruth_path = groundtruth_path
-    #     self.files = []
-    #     print("starting")
-    #     for filename in os.listdir(input_path):
-    #         if os.path.isfile(os.path.join(input_path, filename)) and \
-    #            ((groundtruth_path == None) or \
-    #            os.path.isfile(os.path.join(groundtruth_path, filename))):
-    #                print('Adding file: {}'.format(filename))
-    #                self.files.append(filename)
-    #     print('Total files in dataset: {}'.format(len(self.files)))
+    def create_dataset(self, input_path, groundtruth_path=None):
+        self.input_path = input_path
+        self.groundtruth_path = groundtruth_path
+        self.files = []
+        print("starting")
+        imagePaths = glob.glob("*.png")
+        for image in imagePaths:
+            self.imagePathToTest = image
+            self.add_image_to_dataset()
+            print("Image added to dataset")
+        print('Total files in dataset: {}'.format(self.len_images()))
 
 
 if __name__ == '__main__':
     datasetObject = Dataset()
-    datasetObject.add_image_to_dataset()
+    datasetObject.create_dataset("a")
+    #datasetObject.add_image_to_dataset(arguments)
+
+
+
+# for file in os.listdir("/ImagesOfDataset"):
+#     if file.endswith(".png):
+#         filePath = os.path.join("/mydir", file)
 
 
 
 
-####
+
+
+
+
+
+
+#
