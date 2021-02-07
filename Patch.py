@@ -11,11 +11,11 @@ class Patch():
     relativeCoordinatesWithoutHalo = None
     coordinatesInOriginalImageWithoutHalo = None
 
+    topLeftRelative = [None,None]
+    bottomRightRelative = [None,None]
 
-    topLeftCoordinate = None
-    topRightCoordinate = None
-    bottomLeftCoordinate = None
-    bottomRightCoordinate = None
+    topLeftAbsoluteWithoutHalo = [None,None]
+    bottomRightAbsoluteWithoutHalo = [None,None]
 
     #   Patch dimensions for relative coordinates calculation
     patchWidth = None
@@ -31,10 +31,13 @@ class Patch():
 
 
     def calculate_initial_relative_coordinates(self):
-        self.topLeftCoordinate = [0,0]
-        self.topRightCoordinate = [self.patchWidth,0]
-        self.bottomLeftCoordinate = [0,self.patchHeight]
-        self.bottomRightCoordinate = [self.patchWidth,self.patchHeight]
+        self.topLeftRelative = [0+self.haloSize, 0+self.haloSize]
+        self.bottomRightRelative = [self.patchWidth - self.haloSize, self.patchHeight - self.haloSize]
+
+
+    def calculate_initial_coordinates_without_halo(self):
+        self.topLeftAbsoluteWithoutHalo = self.coordinatesInOriginalImage[0]
+        self.bottomRightAbsoluteWithoutHalo = self.coordinatesInOriginalImage[1]
 
     def __init__(self, imageForPatch, index, coordinatesOriginal,haloSizeUsed):
         self.patchImage = imageForPatch
@@ -46,20 +49,33 @@ class Patch():
         self.patchHeight = patchDimensions[0]
         self.calculate_initial_relative_coordinates()
 
+
     def set_absolute_image_shape(self, widthOfGeneralImage, heightOfGeneralImage):
         self.widthOfMainImage = widthOfGeneralImage
         self.heightOfMainImage = heightOfGeneralImage
 
+
     def calculate_relative_coordinates(self):
         if self.sidesWithHalo[0] == False:
-            self.topLeftCoordinate = [0,0]
+            self.topLeftRelative[1] -= self.haloSize
         if self.sidesWithHalo[1] == False:
-            self.topRightCoordinate = [self.patchWidth,0]
-        if self.sidesWithHalo[2]
-        return
+            self.bottomRightRelative[0] += self.haloSize
+        if self.sidesWithHalo[2] == False:
+            self.bottomRightRelative[1] += self.haloSize
+        if self.sidesWithHalo[3] == False:
+            self.topLeftRelative[0] -= self.haloSize
+
 
     def calculate_absolute_coordinates_without_halo(self):
-        return
+        if self.sidesWithHalo[0] == True:
+            self.topLeftAbsoluteWithoutHalo[1] += self.haloSize
+        if self.sidesWithHalo[1] == True:
+            self.bottomRightAbsoluteWithoutHalo[0] -= self.haloSize
+        if self.sidesWithHalo[2] == True:
+            self.bottomRightAbsoluteWithoutHalo[1] -= self.haloSize
+        if self.sidesWithHalo[3] == True:
+            self.topLeftAbsoluteWithoutHalo[0] += self.haloSize
+
 
     def calculate_halo_sides(self):
         if self.coordinatesInOriginalImage[0][0] == 0:
@@ -71,7 +87,16 @@ class Patch():
         if self.coordinatesInOriginalImage[1][1] == heightOfMainImage:
             sidesWithHalo[2] = False
 
+
     def calculate_extra_coordinates(self):
         self.calculate_halo_sides()
         self.calculate_relative_coordinates()
         self.calculate_absolute_coordinates_without_halo()
+
+
+
+
+
+
+
+#
