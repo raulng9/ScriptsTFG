@@ -8,8 +8,6 @@ class Patch():
     patchImage = None
     indexOfImage = None
     coordinatesInOriginalImage = None
-    relativeCoordinatesWithoutHalo = None
-    coordinatesInOriginalImageWithoutHalo = None
 
     topLeftRelative = [None,None]
     bottomRightRelative = [None,None]
@@ -43,7 +41,7 @@ class Patch():
         self.patchImage = imageForPatch
         self.indexOfImage = index
         self.coordinatesInOriginalImage = coordinatesOriginal
-        self.haloSize = haloSize
+        self.haloSize = haloSizeUsed
         patchDimensions = imageForPatch.shape
         self.patchWidth = patchDimensions[1]
         self.patchHeight = patchDimensions[0]
@@ -79,24 +77,21 @@ class Patch():
 
     def calculate_halo_sides(self):
         if self.coordinatesInOriginalImage[0][0] == 0:
-            sidesWithHalo[-1] = False
+            self.sidesWithHalo[-1] = False
         if self.coordinatesInOriginalImage[0][1] == 0:
-            sidesWithHalo[0] = False
-        if self.coordinatesInOriginalImage[1][0] == widthOfMainImage:
-            sidesWithHalo[1] = False
-        if self.coordinatesInOriginalImage[1][1] == heightOfMainImage:
-            sidesWithHalo[2] = False
+            self.sidesWithHalo[0] = False
+        if self.coordinatesInOriginalImage[1][0] == self.widthOfMainImage:
+            self.sidesWithHalo[1] = False
+        if self.coordinatesInOriginalImage[1][1] == self.heightOfMainImage:
+            self.sidesWithHalo[2] = False
 
 
     def calculate_extra_coordinates(self):
+        self.calculate_initial_coordinates_without_halo()
+        self.calculate_initial_relative_coordinates()
         self.calculate_halo_sides()
         self.calculate_relative_coordinates()
         self.calculate_absolute_coordinates_without_halo()
-
-
-
-
-
 
 
 #
