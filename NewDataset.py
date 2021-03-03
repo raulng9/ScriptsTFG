@@ -87,8 +87,15 @@ class Dataset(torch.utils.data.Dataset):
         width = patch.width
         height = patch.height
         xMatrix = []
-        for i in range(0,width):
-            
+        tensorRow = torch.arange(patch.topLeftCoordinates[0],patch.topLeftCoordinates[0] + width +1)
+        tensorRowDivided = torch.div(tensorRow,width)
+        tensorFullSize = tensorRowDivided.repeat[1,width]
+
+        tensorColumn = torch.arange(patch.topLeftCoordinates[1],patch.topLeftCoordinates[1] + height +1)
+        tensorColumnDivided = torch.div(tensorColumn,height)
+        tensorColumnUnsqueezed = torch.unsqueeze(tensorColumnDivided,1)
+
+
 
         patchWithPositionChannels = torch.cat([patchAsImage,xChannel,yChannel],1)
         return patchWithPositionChannels
